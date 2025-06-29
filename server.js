@@ -43,7 +43,7 @@ app.post('/API/GEMINI', async (req, res) => {
     };
 
     try {
-        const Geminiresponse = await fetch(geminiUrl, {
+        const geminiResponse = await fetch(geminiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(payload)
