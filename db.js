@@ -13,7 +13,7 @@ const connectDB = async () => {
     try {
         const client = new MongoClient(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true });
         await client.connect();
-        db = client.db("promptDataset");
+        db = client.db("red-team-site");
         console.log("MongoDB connected successfully");
         return db;
     } catch (err) {
