@@ -3,6 +3,7 @@ require('dotenv').config();
 
 const express = require('express');
 const fetch = require('node-fetch');
+const { connectDB, getDB } = require('./db');
 
 const app = express();
 const port = 3000;
@@ -16,6 +17,19 @@ app.post('/API/GEMINI', async (req, res) => {
     const apiKey = process.env.GEMINI_API_KEY;
     const userPrompt = req.body.prompt;
     const isVariation = req.body.isVariation;
+
+    try {
+        const db = getDB();
+        await db.collection('prompts').insertOne({
+            prompt: userPrompt,
+            isVariation,
+            timestamp: new Date(),
+            ip: req.ip
+        });
+    } catch (dbError) {
+        console.error('Error saving prompt to DB:', dbError);
+        // We can choose to not fail the whole request if DB write fails
+    }
 
     if (!apiKey) {
         return res.status(500).json({ error: 'API key not configured on server.' });
@@ -58,6 +72,19 @@ app.post('/API/GEMINI', async (req, res) => {
     }
 });
 
-app.listen(port, () => {
-    console.log(`Server running at http://localhost:${port}`);
+app.get('/logs', async (req, res) => {
+    try {
+        const db = getDB();
+        const prompts = await db.collection('prompts').find({}).sort({ timestamp: -1 }).limit(100).toArray();
+        res.json(prompts);
+    } catch (error) {
+        console.error('Error fetching logs from DB:', error);
+        res.status(500).json({ error: 'Failed to fetch logs.' });
+    }
+});
+
+connectDB().then(() => {
+    app.listen(port, () => {
+        console.log(`Server running at http://localhost:${port}`);
+    });
 });
