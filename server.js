@@ -18,18 +18,7 @@ app.post('/API/GEMINI', async (req, res) => {
     const userPrompt = req.body.prompt;
     const isVariation = req.body.isVariation;
 
-    try {
-        const db = getDB();
-        await db.collection('prompts').insertOne({
-            prompt: userPrompt,
-            isVariation,
-            timestamp: new Date(),
-            ip: req.ip
-        });
-    } catch (dbError) {
-        console.error('Error saving prompt to DB:', dbError);
-        // We can choose to not fail the whole request if DB write fails
-    }
+    let geminiData;
 
     if (!apiKey) {
         return res.status(500).json({ error: 'API key not configured on server.' });
@@ -63,8 +52,23 @@ app.post('/API/GEMINI', async (req, res) => {
             body: JSON.stringify(payload)
         });
 
-        const data = await geminiResponse.json();
-        res.json(data); // Forward Gemini's response to the frontend
+        geminiData = await geminiResponse.json();
+
+        try {
+            const db = getDB();
+            await db.collection('prompts').insertOne({
+                prompt: userPrompt,
+                response: geminiData,
+                isVariation,
+                timestamp: new Date(),
+                ip: req.ip
+            });
+        } catch (dbError) {
+            console.error('Error saving prompt to DB:', dbError);
+            // We can choose to not fail the whole request if DB write fails
+        }
+
+        res.json(geminiData); // Forward Gemini's response to the frontend
 
     } catch (error) {
         console.error('Error calling Gemini API:', error);
@@ -83,8 +87,15 @@ app.get('/logs', async (req, res) => {
     }
 });
 
-connectDB().then(() => {
-    app.listen(port, () => {
+async function startServer() {
+    await connectDB();
+    return app.listen(port, () => {
         console.log(`Server running at http://localhost:${port}`);
     });
-});
+}
+
+if (require.main === module) {
+    startServer();
+}
+
+module.exports = { app, startServer };
