@@ -105,6 +105,9 @@ app.post('/API/GEMINI', async (req, res) => {
 });
 
 app.get('/logs', async (req, res) => {
+    if (!req.session.user) {
+        return res.status(401).json({ error: 'Unauthorized access' });
+    }
     try {
         const db = getDB();
         const {
