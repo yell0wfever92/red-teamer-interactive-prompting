@@ -14,45 +14,91 @@
 </head>
 <body>
     <h1>Prompt Submission Logs</h1>
+
+    <form id="filter-form" style="margin-bottom:1em;">
+        <input type="text" id="filter-ip" placeholder="IP" />
+        <input type="text" id="filter-user" placeholder="User" />
+        <input type="date" id="filter-start" />
+        <input type="date" id="filter-end" />
+        <select id="sort-order">
+            <option value="desc">Newest</option>
+            <option value="asc">Oldest</option>
+        </select>
+        <button type="submit">Apply</button>
+    </form>
+
     <table>
         <thead>
             <tr>
                 <th>Timestamp</th>
+                <th>User</th>
                 <th>Prompt</th>
                 <th>Is Variation</th>
                 <th>IP Address</th>
+                <th>Response</th>
             </tr>
         </thead>
         <tbody id="logs-table-body">
             <!-- Rows will be inserted here by JavaScript -->
         </tbody>
     </table>
+    <div style="margin-top:1em;">
+        <button id="prev-page">Prev</button>
+        <span id="page-info"></span>
+        <button id="next-page">Next</button>
+    </div>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            fetch('/logs')
-                .then(response => response.json())
-                .then(data => {
-                    const tableBody = document.getElementById('logs-table-body');
-                    if (data.length === 0) {
-                        tableBody.innerHTML = '<tr><td colspan="4">No logs found.</td></tr>';
-                        return;
-                    }
-                    const rows = data.map(log => `
-                        <tr>
-                            <td>${new Date(log.timestamp).toLocaleString()}</td>
-                            <td>${log.prompt}</td>
-                            <td>${log.isVariation}</td>
-                            <td>${log.ip}</td>
-                        </tr>
-                    `).join('');
-                    tableBody.innerHTML = rows;
-                })
-                .catch(error => {
-                    console.error('Error fetching logs:', error);
-                    const tableBody = document.getElementById('logs-table-body');
-                    tableBody.innerHTML = '<tr><td colspan="4">Error loading logs.</td></tr>';
-                });
+            const form = document.getElementById('filter-form');
+            const tableBody = document.getElementById('logs-table-body');
+            const pageInfo = document.getElementById('page-info');
+            let page = 1;
+            const limit = 20;
+
+            const load = () => {
+                const params = new URLSearchParams();
+                params.set('page', page);
+                params.set('limit', limit);
+                params.set('sort', document.getElementById('sort-order').value);
+                if (document.getElementById('filter-ip').value) params.set('ip', document.getElementById('filter-ip').value);
+                if (document.getElementById('filter-user').value) params.set('user', document.getElementById('filter-user').value);
+                if (document.getElementById('filter-start').value) params.set('start', document.getElementById('filter-start').value);
+                if (document.getElementById('filter-end').value) params.set('end', document.getElementById('filter-end').value);
+
+                fetch('/logs?' + params.toString())
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.prompts.length === 0) {
+                            tableBody.innerHTML = '<tr><td colspan="6">No logs found.</td></tr>';
+                            pageInfo.textContent = '';
+                            return;
+                        }
+                        const rows = data.prompts.map(log => `
+                            <tr>
+                                <td>${new Date(log.timestamp).toLocaleString()}</td>
+                                <td>${log.user || ''}</td>
+                                <td>${log.prompt}</td>
+                                <td>${log.isVariation}</td>
+                                <td>${log.ip}</td>
+                                <td>${(log.response && JSON.stringify(log.response)) || ''}</td>
+                            </tr>
+                        `).join('');
+                        tableBody.innerHTML = rows;
+                        pageInfo.textContent = `Page ${page} of ${Math.ceil(data.total / limit)}`;
+                    })
+                    .catch(err => {
+                        console.error('Error fetching logs:', err);
+                        tableBody.innerHTML = '<tr><td colspan="6">Error loading logs.</td></tr>';
+                        pageInfo.textContent = '';
+                    });
+            };
+
+            form.addEventListener('submit', e => { e.preventDefault(); page = 1; load(); });
+            document.getElementById('prev-page').addEventListener('click', () => { if (page > 1) { page--; load(); } });
+            document.getElementById('next-page').addEventListener('click', () => { page++; load(); });
+
+            load();
         });
     </script>
 </body>

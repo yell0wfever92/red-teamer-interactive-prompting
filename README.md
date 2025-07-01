@@ -6,8 +6,9 @@ This is a simple web application that allows users to interact with the Gemini A
 
 -   Frontend to send prompts to Google's Gemini API.
 -   Backend Express server to securely handle API requests.
--   Logs all prompts, variations, timestamps, and IP addresses to a MongoDB database.
--   A `/logs.html` page to view the submitted prompts.
+-   Logs all prompts, variations, timestamps, IP addresses, **and Gemini responses** to a MongoDB database.
+-   Simple user authentication. Login at `/login.html` before submitting prompts.
+-   A `/logs.html` page to view and filter submitted prompts.
 
 ## Setup
 
@@ -22,6 +23,8 @@ This is a simple web application that allows users to interact with the Gemini A
 3.  **Create a `.env` file** in the root directory. Copy the content from `.env.example` and fill in your details:
     -   `GEMINI_API_KEY`: Your API key from Google AI Studio.
     -   `MONGO_URI`: Your MongoDB connection string.
+    -   `SESSION_SECRET`: Secret used for session cookies.
+    -   `ADMIN_USERNAME` / `ADMIN_PASSWORD`: Credentials for logging in.
 
 4.  **Start the server:**
     ```bash
