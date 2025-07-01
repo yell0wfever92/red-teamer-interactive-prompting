@@ -15,7 +15,11 @@ app.use(express.json());      // Middleware to parse JSON bodies
 app.use(session({
     secret: process.env.SESSION_SECRET || 'secret',
     resave: false,
-    saveUninitialized: true
+    saveUninitialized: true,
+    cookie: {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production'
+    }
 }));
 
 const users = {
